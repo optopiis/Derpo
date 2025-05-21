@@ -76,6 +76,7 @@ export default function Home() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [chatSections, setChatSections] = useState<ChatSection[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<'gemini' | 'deepseek'>('gemini');
   
   const suggestions: SuggestionType[] = [
     { label: "Podcast Outline", prefix: "Create a detailed podcast outline for: " },
@@ -192,21 +193,24 @@ export default function Home() {
         reasoningInput
       };
 
-      // Step 3: Get analysis from Gemini
+      // Step 3: Get analysis from selected model
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [
-          userMessage,
-          {
-            role: 'assistant' as const,
-            content: 'I found some relevant information. Let me analyze it and create a comprehensive report.',
-          },
-          {
-            role: 'user' as const,
-            content: reasoningInput,
-          },
-        ] }),
+        body: JSON.stringify({ 
+          messages: [
+            userMessage,
+            {
+              role: 'assistant' as const,
+              content: 'I found some relevant information. Let me analyze it and create a comprehensive report.',
+            },
+            {
+              role: 'user' as const,
+              content: reasoningInput,
+            },
+          ],
+          model: selectedModel
+        }),
         signal: abortControllerRef.current.signal,
       });
 
@@ -214,7 +218,6 @@ export default function Home() {
         throw new Error('Failed to generate report. Please try again.');
       }
 
-      // Gemini returns a single JSON object with a 'result' property
       const data = await response.json();
       if (data.result) {
         assistantMessage.content = data.result;
@@ -228,7 +231,7 @@ export default function Home() {
           return updated;
         });
       } else {
-        throw new Error('No result returned from Gemini API.');
+        throw new Error(`No result returned from ${selectedModel} API.`);
       }
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -267,10 +270,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <TopBar />
-      <div className="pt-14 pb-24"> {/* Add padding top to account for fixed header */}
-        <main className="max-w-3xl mx-auto p-8">
+      <main className="container mx-auto px-4 pt-20 pb-8">
+        <div className="max-w-4xl mx-auto">
           <AnimatePresence>
             {!hasSubmitted ? (
               <motion.div 
@@ -289,6 +292,30 @@ export default function Home() {
                   </p>
                 </div>
                 <form onSubmit={handleSubmit} className="w-full max-w-[704px] mx-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedModel('gemini')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
+                        selectedModel === 'gemini'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Gemini
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedModel('deepseek')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
+                        selectedModel === 'deepseek'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Deepseek
+                    </button>
+                  </div>
                   <div className="relative bg-gray-50 rounded-xl shadow-md border border-gray-300">
                     <textarea
                       value={input}
@@ -689,14 +716,38 @@ export default function Home() {
               </motion.div>
             )}
           </AnimatePresence>
-        </main>
-      </div>
+        </div>
+      </main>
 
       {/* Updated floating input box styling - show immediately after first submission */}
       {hasSubmitted && (
         <div className="fixed bottom-6 left-0 right-0 flex justify-center">
           <form onSubmit={handleSubmit} className="w-full max-w-[704px] mx-4">
             <div className="relative bg-gray-50 rounded-xl shadow-md border border-gray-300">
+              <div className="flex items-center space-x-2 mb-2 p-4 pb-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedModel('gemini')}
+                  className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    selectedModel === 'gemini'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Gemini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedModel('deepseek')}
+                  className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    selectedModel === 'deepseek'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Deepseek
+                </button>
+              </div>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
