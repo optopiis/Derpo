@@ -51,6 +51,15 @@ interface SuggestionType {
   prefix: string;
 }
 
+
+// app/page.tsx
+
+export const metadata = {
+  title: "Derpo",
+  description: "derpo",
+};
+
+
 // Add TopBar component
 const TopBar = () => {
   return (
